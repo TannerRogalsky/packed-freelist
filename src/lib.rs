@@ -1,6 +1,5 @@
 use std::vec::Vec;
 use std::ops::{Index, Deref};
-use std::slice::SliceIndex;
 
 /// Reference replacement to guarantee memory-stability
 pub type AllocationID = u32;
@@ -69,12 +68,12 @@ pub struct PackedFreelist<T> {
     next_allocation: u16,
 }
 
-impl<T: Default + Clone> PackedFreelist<T> {
+impl<T> PackedFreelist<T> {
     pub fn new(max_objects: usize) -> PackedFreelist<T> {
         assert!(max_objects < TOMBSTONE as usize, "PackedFreelist is too large. Max size is {}.", TOMBSTONE - 1);
 
         let mut r = PackedFreelist {
-            objects: vec![T::default(); max_objects],
+            objects: Vec::with_capacity(max_objects),
             num_objects: 0,
             object_alloc_ids: vec![0; max_objects],
             allocations: (0..max_objects as u16).map(|i| Allocation {
@@ -112,8 +111,10 @@ impl<T: Default + Clone> PackedFreelist<T> {
             Ok(allocation) => {
                 let object_index = allocation.object_index as usize;
                 let allocation_id = allocation.allocation_id;
-                let dest = &mut self.objects[object_index];
-                std::mem::replace(dest, val);
+                match self.objects.get_mut(object_index) {
+                    None => {self.objects.push(val)},
+                    Some(e) => {*e = val},
+                }
                 Ok(allocation_id)
             },
             Err(err) => { Err(err) },
@@ -125,10 +126,9 @@ impl<T: Default + Clone> PackedFreelist<T> {
             None => { panic!("oh god") },
             Some(allocation) => {
                 let last_index = (allocation.allocation_id & ALLOC_INDEX_MASK) as u16;
-
                 match self.objects.get(allocation.object_index as usize) {
                     None => { panic!("no no no no")},
-                    Some(object) => {
+                    Some(_object) => {
                         let last = self.num_objects - 1;
                         if allocation.object_index as usize != last {
                             self.objects.swap(last, allocation.object_index as usize);
