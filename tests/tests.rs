@@ -8,15 +8,14 @@ mod packed_freelist {
 
     #[test]
     fn capacity() {
-        let max_objects = 5;
-        let p : PackedFreelist<u32> = PackedFreelist::new(max_objects);
-        assert_eq!(max_objects, p.capacity());
+        const CAPACITY: usize = 5;
+        let p : PackedFreelist<u32> = PackedFreelist::with_capacity(CAPACITY);
+        assert_eq!(CAPACITY, p.capacity());
     }
 
     #[test]
     fn size() {
-        let max_objects = 5;
-        let mut p : PackedFreelist<u32> = PackedFreelist::new(max_objects);
+        let mut p : PackedFreelist<u32> = PackedFreelist::with_capacity(5);
         assert_eq!(0, p.size());
 
         assert!(p.insert(1).is_ok());
@@ -26,12 +25,12 @@ mod packed_freelist {
     #[test]
     fn contains() {
         {
-            let p : PackedFreelist<u32> = PackedFreelist::new(5);
+            let p : PackedFreelist<u32> = PackedFreelist::with_capacity(5);
             assert_eq!(p.contains(0), false);
         }
 
         {
-            let mut p : PackedFreelist<u32> = PackedFreelist::new(5);
+            let mut p : PackedFreelist<u32> = PackedFreelist::with_capacity(5);
             let a = p.insert(99).unwrap();
             assert_eq!(p.contains(a), true);
             assert_eq!(p.contains(0), false);
@@ -44,7 +43,7 @@ mod packed_freelist {
     fn insert() {
         {
             const CAPACITY: usize = 5;
-            let mut p : PackedFreelist<usize> = PackedFreelist::new(CAPACITY);
+            let mut p : PackedFreelist<usize> = PackedFreelist::with_capacity(CAPACITY);
             for i in 0..CAPACITY {
                 assert!(p.insert(i).is_ok());
             }
@@ -52,16 +51,14 @@ mod packed_freelist {
             let r = p.insert(v);
             let err = r.unwrap_err();
             assert!(err.source().is_none());
-            assert_eq!(format!("{}", err), format!("Failed to acquire allocation with index {}", 6));
+            assert_eq!(format!("{}", err), format!("Failed to acquire allocation with index {}", v));
         }
-
-
     }
 
     #[test]
     fn remove() {
         {
-            let mut p: PackedFreelist<TestStruct> = PackedFreelist::new(5);
+            let mut p: PackedFreelist<TestStruct> = PackedFreelist::with_capacity(5);
             assert_eq!(p.size(), 0);
             let a = p.insert(TestStruct { n: 0 }).unwrap();
             assert_eq!(p.size(), 1);
@@ -70,7 +67,7 @@ mod packed_freelist {
         }
 
         {
-            let mut p: PackedFreelist<TestStruct> = PackedFreelist::new(3);
+            let mut p: PackedFreelist<TestStruct> = PackedFreelist::with_capacity(3);
             let id1 = p.insert(TestStruct { n: 10 }).unwrap();
             let id2 = p.insert(TestStruct { n: 20 }).unwrap();
             let id3 = p.insert(TestStruct { n: 30 }).unwrap();
@@ -103,7 +100,7 @@ mod packed_freelist {
     #[test]
     fn iterator() {
         {
-            let mut p : PackedFreelist<u32> = PackedFreelist::new(5);
+            let mut p : PackedFreelist<u32> = PackedFreelist::with_capacity(5);
             assert_eq!(p.iter().fold(0, |a, &c| a + c), 0);
             assert!(p.insert(1).is_ok());
             assert!(p.insert(2).is_ok());
@@ -111,7 +108,7 @@ mod packed_freelist {
         }
 
         {
-            let mut p : PackedFreelist<TestStruct> = PackedFreelist::new(5);
+            let mut p : PackedFreelist<TestStruct> = PackedFreelist::with_capacity(5);
             assert_eq!(p.iter().fold(0, |a, c| a + c.n), 0);
             assert!(p.insert(TestStruct { n: 1 }).is_ok());
             assert!(p.insert(TestStruct { n: 2 }).is_ok());
@@ -130,7 +127,7 @@ mod packed_freelist {
 
             const MAX_OBJECTS: usize = 100;
             type TestType = usize;
-            let mut p : PackedFreelist<TestType> = PackedFreelist::new(MAX_OBJECTS);
+            let mut p : PackedFreelist<TestType> = PackedFreelist::with_capacity(MAX_OBJECTS);
             let ids: Vec<AllocationID> = (0..MAX_OBJECTS).map(|value| p.insert(value as TestType).unwrap()).collect();
 
             let base_ptr: *const TestType = p.iter().next().unwrap();
@@ -145,7 +142,7 @@ mod packed_freelist {
     #[test]
     fn index() {
         {
-            let mut p : PackedFreelist<u32> = PackedFreelist::new(5);
+            let mut p : PackedFreelist<u32> = PackedFreelist::with_capacity(5);
             let a = p.insert(1).unwrap();
             let b = p.insert(2).unwrap();
             assert_eq!(p[a], 1);

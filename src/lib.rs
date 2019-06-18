@@ -1,15 +1,6 @@
 use std::vec::Vec;
 use std::ops::{Index, Deref};
 
-/// Reference replacement to guarantee memory-stability
-pub type AllocationID = u32;
-
-/// Used to extract the allocation index from an object ID.
-const ALLOC_INDEX_MASK: AllocationID = std::u16::MAX as AllocationID;
-
-/// Used to mark an allocation as owning no object. This system's sentinel value.
-const TOMBSTONE: u16 = std::u16::MAX;
-
 /// Indicates an error when attempting to allocate an object
 #[derive(Debug, Clone)]
 pub struct AllocationError {
@@ -29,7 +20,10 @@ impl std::fmt::Display for AllocationError {
     }
 }
 
-#[derive(Clone)]
+/// Reference replacement to guarantee memory-stability
+pub type AllocationID = u32;
+
+#[derive(Debug, Clone)]
 struct Allocation {
     /// The ID of this allocation:
     ///  - The 16 LSBs store the index of this allocation in the list of allocations
@@ -44,7 +38,15 @@ struct Allocation {
     next_allocation: u16,
 }
 
-#[derive(Clone)]
+/// Used to extract the allocation index from an object ID.
+const ALLOC_INDEX_MASK: AllocationID = std::u16::MAX as AllocationID;
+
+/// Used to mark an allocation as owning no object. This system's sentinel value.
+const TOMBSTONE: u16 = std::u16::MAX;
+
+/// A data structure that provides constant time insertions and deletions and that elements are
+/// contiguous in memory.
+#[derive(Debug, Clone)]
 pub struct PackedFreelist<T> {
     /// Storage for objects
     /// Objects are contiguous, and always packed to the start of the storage.
@@ -59,9 +61,9 @@ pub struct PackedFreelist<T> {
     allocations: Vec<Allocation>,
 
     /// When an allocation is freed, the enqueue index struct's next will point to it.
-    /// This ensures that allocations are reused as infrequently as possible
-    /// which reduces the likelihood that two objects have the same ID.
-    /// Note objects are still not guaranteed to have globally unique IDs, since IDs will be reused after N * 2^16 allocations.
+    /// This ensures that allocations are reused as infrequently as possible which reduces the
+    /// likelihood that two objects have the same ID. Note objects are still not guaranteed to have
+    /// globally unique IDs, since IDs will be reused after N * 2^16 allocations.
     last_allocation: u16,
 
     /// The next index struct to use for an allocation.
@@ -69,24 +71,30 @@ pub struct PackedFreelist<T> {
 }
 
 impl<T> PackedFreelist<T> {
-    pub fn new(max_objects: usize) -> PackedFreelist<T> {
-        assert!(max_objects < TOMBSTONE as usize, "PackedFreelist is too large. Max size is {}.", TOMBSTONE - 1);
+    /// The maximum size allowed by this implementation of a PackedFreelist.
+    pub const MAX_SIZE: usize = (TOMBSTONE - 1) as usize;
+
+    /// Constructs a new, empty `PackedFreelist<T>` with the specified capacity.
+    ///
+    /// The freelist will be able to hold exactly `capacity` elements without reallocating.
+    pub fn with_capacity(capacity: usize) -> PackedFreelist<T> {
+        assert!(capacity <= Self::MAX_SIZE, "PackedFreelist is too large. Max size is {}.", Self::MAX_SIZE);
 
         let mut r = PackedFreelist {
-            objects: Vec::with_capacity(max_objects),
+            objects: Vec::with_capacity(capacity),
             num_objects: 0,
-            object_alloc_ids: vec![0; max_objects],
-            allocations: (0..max_objects as u16).map(|i| Allocation {
+            object_alloc_ids: vec![0; capacity],
+            allocations: (0..capacity as u16).map(|i| Allocation {
                 allocation_id: i as AllocationID,
                 object_index: TOMBSTONE,
                 next_allocation: i + 1
             }).collect(),
-            last_allocation: (max_objects - 1) as u16,
+            last_allocation: (capacity - 1) as u16,
             next_allocation: 0
         };
 
-        if max_objects > 0 {
-            r.allocations[max_objects - 1].next_allocation = 0;
+        if capacity > 0 {
+            r.allocations[capacity - 1].next_allocation = 0;
         }
 
         r
@@ -103,7 +111,7 @@ impl<T> PackedFreelist<T> {
         }
     }
 
-    /// Copy an object into
+    /// Insert an object
     pub fn insert(&mut self, value: T) -> Result<AllocationID, AllocationError> {
         let allocation = self.insert_alloc();
 
@@ -121,6 +129,7 @@ impl<T> PackedFreelist<T> {
         }
     }
 
+    /// Remove an object
     pub fn remove(&mut self, id: AllocationID) {
         match self.allocations.get((id & ALLOC_INDEX_MASK) as usize) {
             None => { panic!("oh god") },
@@ -153,14 +162,17 @@ impl<T> PackedFreelist<T> {
         });
     }
 
+    /// Get number of elements
     pub fn size(&self) -> usize {
         self.num_objects
     }
 
+    /// Get maximum number of elements
     pub fn capacity(&self) -> usize {
         self.objects.capacity()
     }
 
+    /// Internal allocation logic
     fn insert_alloc(&mut self) -> Result<&Allocation, AllocationError> {
         if self.num_objects >= self.capacity() {
             return Err(AllocationError { allocation_index: (self.num_objects + 1) as u16 });
