@@ -53,6 +53,14 @@ mod packed_freelist {
             assert!(err.source().is_none());
             assert_eq!(format!("{}", err), format!("Failed to acquire allocation with index {}", v));
         }
+
+        {
+            let mut p : PackedFreelist<usize> = PackedFreelist::with_capacity(1);
+            let id1 = p.insert(1).unwrap();
+            p.remove(id1);
+            let id2 = p.insert(1).unwrap();
+            assert_ne!(id1, id2);
+        }
     }
 
     #[test]
