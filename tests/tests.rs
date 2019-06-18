@@ -1,6 +1,9 @@
 mod packed_freelist {
+    extern crate rand;
+
     use packed_freelist::{PackedFreelist, AllocationID};
     use std::error::Error;
+    use self::rand::seq::SliceRandom;
 
     struct TestStruct {
         pub n: u32,
@@ -140,10 +143,14 @@ mod packed_freelist {
 
             let base_ptr: *const TestType = p.iter().next().unwrap();
             ensure_packdedness(base_ptr, &p);
-            ids.iter().for_each(|&id| {
-                p.remove(id);
-                ensure_packdedness(base_ptr, &p);
-            });
+
+            {
+                let rng = &mut rand::thread_rng();
+                ids.choose_multiple(rng, ids.len()).for_each(|&id| {
+                    p.remove(id);
+                    ensure_packdedness(base_ptr, &p);
+                });
+            }
         }
     }
 

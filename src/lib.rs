@@ -52,7 +52,6 @@ pub struct PackedFreelist<T> {
     /// Objects are contiguous, and always packed to the start of the storage.
     /// Objects can be relocated in this storage thanks to the separate list of allocations.
     objects: Vec<T>,
-    num_objects: usize,
 
     /// The index in the allocations array for the next allocation to allocate after this one.
     object_alloc_ids: Vec<AllocationID>,
@@ -82,7 +81,6 @@ impl<T> PackedFreelist<T> {
 
         let mut r = PackedFreelist {
             objects: Vec::with_capacity(capacity),
-            num_objects: 0,
             object_alloc_ids: vec![0; capacity],
             allocations: (0..capacity as u16).map(|i| Allocation {
                 allocation_id: i as AllocationID,
@@ -138,7 +136,7 @@ impl<T> PackedFreelist<T> {
                 match self.objects.get(allocation.object_index as usize) {
                     None => { panic!("no no no no")},
                     Some(_object) => {
-                        let last = self.num_objects - 1;
+                        let last = self.objects.len() - 1;
                         if allocation.object_index as usize != last {
                             self.objects.swap(last, allocation.object_index as usize);
                             self.object_alloc_ids[allocation.object_index as usize] = self.object_alloc_ids[last];
@@ -149,7 +147,6 @@ impl<T> PackedFreelist<T> {
                 }
 
                 self.objects.pop();
-                self.num_objects -= 1;
 
                 self.allocations[self.last_allocation as usize].next_allocation = last_index;
                 self.last_allocation = last_index;
@@ -164,7 +161,7 @@ impl<T> PackedFreelist<T> {
 
     /// Get number of elements
     pub fn size(&self) -> usize {
-        self.num_objects
+        self.objects.len()
     }
 
     /// Get maximum number of elements
@@ -174,8 +171,9 @@ impl<T> PackedFreelist<T> {
 
     /// Internal allocation logic
     fn insert_alloc(&mut self) -> Result<&Allocation, AllocationError> {
-        if self.num_objects >= self.capacity() {
-            return Err(AllocationError { allocation_index: (self.num_objects + 1) as u16 });
+        let len = self.len();
+        if len >= self.capacity() {
+            return Err(AllocationError { allocation_index: (len + 1) as u16 });
         }
 
         let allocation = self.allocations.get_mut(self.next_allocation as usize);
@@ -185,10 +183,8 @@ impl<T> PackedFreelist<T> {
             Some(allocation) => {
                 self.next_allocation = allocation.next_allocation;
                 allocation.allocation_id += 0x10000;
-                allocation.object_index = self.num_objects as u16;
-                self.object_alloc_ids[self.num_objects] = allocation.allocation_id;
-
-                self.num_objects += 1;
+                allocation.object_index = len as u16;
+                self.object_alloc_ids[len] = allocation.allocation_id;
 
                 Ok(allocation)
             },
