@@ -163,7 +163,7 @@ impl<T> PackedFreelist<T> {
 
     fn insert_alloc(&mut self) -> Result<&Allocation, AllocationError> {
         if self.num_objects >= self.capacity() {
-            return Err(AllocationError { allocation_index: self.next_allocation });
+            return Err(AllocationError { allocation_index: (self.num_objects + 1) as u16 });
         }
 
         let allocation = self.allocations.get_mut(self.next_allocation as usize);

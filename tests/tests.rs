@@ -1,6 +1,6 @@
-#[cfg(test)]
 mod packed_freelist {
     use packed_freelist::{PackedFreelist, AllocationID};
+    use std::error::Error;
 
     struct TestStruct {
         pub n: u32,
@@ -38,6 +38,24 @@ mod packed_freelist {
             assert_eq!(p.contains(1), false);
             assert_eq!(p.contains(99), false);
         }
+    }
+
+    #[test]
+    fn insert() {
+        {
+            const CAPACITY: usize = 5;
+            let mut p : PackedFreelist<usize> = PackedFreelist::new(CAPACITY);
+            for i in 0..CAPACITY {
+                assert!(p.insert(i).is_ok());
+            }
+            let v = CAPACITY + 1;
+            let r = p.insert(v);
+            let err = r.unwrap_err();
+            assert!(err.source().is_none());
+            assert_eq!(format!("{}", err), format!("Failed to acquire allocation with index {}", 6));
+        }
+
+
     }
 
     #[test]
