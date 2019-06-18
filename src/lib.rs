@@ -104,7 +104,7 @@ impl<T> PackedFreelist<T> {
     }
 
     /// Copy an object into
-    pub fn insert(&mut self, val: T) -> Result<AllocationID, AllocationError> {
+    pub fn insert(&mut self, value: T) -> Result<AllocationID, AllocationError> {
         let allocation = self.insert_alloc();
 
         match allocation {
@@ -112,8 +112,8 @@ impl<T> PackedFreelist<T> {
                 let object_index = allocation.object_index as usize;
                 let allocation_id = allocation.allocation_id;
                 match self.objects.get_mut(object_index) {
-                    None => {self.objects.push(val)},
-                    Some(e) => {*e = val},
+                    None => self.objects.push(value),
+                    Some(e) => *e = value,
                 }
                 Ok(allocation_id)
             },
@@ -181,42 +181,6 @@ impl<T> PackedFreelist<T> {
                 Ok(allocation)
             },
         }
-    }
-}
-
-//pub struct PackedFreelistIter<'a, T> {
-//    list: &'a PackedFreelist<'a, T>,
-//    current: usize,
-//}
-//
-//impl<'a, T> Iterator for PackedFreelistIter<'a, T> {
-//    type Item = &'a T;
-//
-//    fn next(&mut self) -> Option<Self::Item> {
-//        let v = self.list.objects.get(self.current);
-//        self.current += 1;
-//        v
-//    }
-//}
-//
-//impl<'a, T> IntoIterator for PackedFreelist<'a, T> {
-//    type Item = T;
-//    type IntoIter = PackedFreelistIter<'a, Self::Item>;
-//
-//    fn into_iter(self) -> Self::IntoIter {
-//        PackedFreelistIter {
-//            list: self.objects,
-//            current: 0,
-//        }
-//    }
-//}
-
-impl<T> IntoIterator for PackedFreelist<T> {
-    type Item = T;
-    type IntoIter = ::std::vec::IntoIter<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.objects.into_iter()
     }
 }
 
