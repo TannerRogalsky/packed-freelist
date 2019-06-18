@@ -28,7 +28,7 @@ after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
 
-    if [[ -z "$TOKEN" ]]; then
+    if [[ -n "$TOKEN" ]]; then
       cargo doc \
         && echo '<meta http-equiv=refresh content=0;url=packed-freelist/index.html>' > target/doc/index.html && \
         sudo pip install ghp-import && \
