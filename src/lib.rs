@@ -159,8 +159,7 @@ impl<T> PackedFreelist<T> {
         });
     }
 
-    /// Get number of elements
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.objects.len()
     }
 

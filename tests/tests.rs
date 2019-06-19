@@ -17,12 +17,12 @@ mod packed_freelist {
     }
 
     #[test]
-    fn size() {
+    fn len() {
         let mut p : PackedFreelist<u32> = PackedFreelist::with_capacity(5);
-        assert_eq!(0, p.size());
+        assert_eq!(0, p.len());
 
         assert!(p.insert(1).is_ok());
-        assert_eq!(1, p.size());
+        assert_eq!(1, p.len());
     }
 
     #[test]
@@ -70,38 +70,48 @@ mod packed_freelist {
     fn remove() {
         {
             let mut p: PackedFreelist<TestStruct> = PackedFreelist::with_capacity(5);
-            assert_eq!(p.size(), 0);
+            assert_eq!(p.len(), 0);
             let a = p.insert(TestStruct { n: 0 }).unwrap();
-            assert_eq!(p.size(), 1);
+            assert_eq!(p.len(), 1);
             p.remove(a);
-            assert_eq!(p.size(), 0);
+            assert_eq!(p.len(), 0);
         }
 
         {
-            let mut p: PackedFreelist<TestStruct> = PackedFreelist::with_capacity(3);
-            let id1 = p.insert(TestStruct { n: 10 }).unwrap();
-            let id2 = p.insert(TestStruct { n: 20 }).unwrap();
-            let id3 = p.insert(TestStruct { n: 30 }).unwrap();
+//            let order: Vec<u32> = vec![1, 3, 2];
+//            let mut ORDER_ITER: std::slice::Iter<u32> = order.iter();
+//            impl Drop for TestStruct {
+//                fn drop(&mut self) {
+//                    unsafe {
+//                        assert_eq!(Some(&self.n), ORDER_ITER.next())
+//                    }
+//                }
+//            }
 
-            assert_eq!(p.size(), 3);
+            let mut p: PackedFreelist<TestStruct> = PackedFreelist::with_capacity(3);
+            let id1 = p.insert(TestStruct { n: 1 }).unwrap();
+            let id2 = p.insert(TestStruct { n: 2 }).unwrap();
+            let id3 = p.insert(TestStruct { n: 3 }).unwrap();
+
+            assert_eq!(p.len(), 3);
             assert!(p.contains(id1));
             assert!(p.contains(id2));
             assert!(p.contains(id3));
 
             p.remove(id1);
-            assert_eq!(p.size(), 2);
+            assert_eq!(p.len(), 2);
             assert!(p.contains(id3));
             assert!(p.contains(id2));
             assert!(!p.contains(id1));
 
             p.remove(id3);
-            assert_eq!(p.size(), 1);
+            assert_eq!(p.len(), 1);
             assert!(!p.contains(id3));
             assert!(p.contains(id2));
             assert!(!p.contains(id1));
 
             p.remove(id2);
-            assert_eq!(p.size(), 0);
+            assert_eq!(p.len(), 0);
             assert!(!p.contains(id3));
             assert!(!p.contains(id2));
             assert!(!p.contains(id1));
