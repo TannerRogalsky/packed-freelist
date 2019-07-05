@@ -17,15 +17,9 @@ matrix:
 before_cache: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     cargo install cargo-tarpaulin -f
-  fi
-
-before_script: |
-  if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
-    rustup component add clippy --toolchain=nightly || cargo install --git https://github.com/rust-lang/rust-clippy/ --force clippy
-  else
     rustup component add clippy
   fi
-  
+
 script:
   - cargo clean
   - cargo build
