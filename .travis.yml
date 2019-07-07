@@ -22,15 +22,14 @@ before_cache: |
 before_script: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
     rustup component add clippy
+  else
+    rustup component add clippy --toolchain=nightly || cargo install --git https://github.com/rust-lang/rust-clippy/ --force clippy
   fi
 
 script:
   - cargo clean
   - cargo build
-  - |
-  if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
-    cargo clippy
-  fi
+  - cargo clippy
   - cargo test
 
 after_success: |
