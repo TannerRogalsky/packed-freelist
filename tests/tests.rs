@@ -26,6 +26,15 @@ mod packed_freelist {
     }
 
     #[test]
+    fn is_empty() {
+        let mut p : PackedFreelist<u32> = PackedFreelist::with_capacity(5);
+        assert!(p.is_empty());
+
+        assert!(p.insert(1).is_ok());
+        assert!(!p.is_empty());
+    }
+
+    #[test]
     fn contains() {
         {
             let p : PackedFreelist<u32> = PackedFreelist::with_capacity(5);

@@ -39,10 +39,10 @@ struct Allocation {
 }
 
 /// Used to extract the allocation index from an object ID.
-const ALLOC_INDEX_MASK: AllocationID = std::u16::MAX as AllocationID;
+const ALLOC_INDEX_MASK: AllocationID = u16::max_value() as AllocationID;
 
 /// Used to mark an allocation as owning no object. This system's sentinel value.
-const TOMBSTONE: u16 = std::u16::MAX;
+const TOMBSTONE: u16 = u16::max_value();
 
 /// A data structure that provides constant time insertions and deletions and that elements are
 /// contiguous in memory.
@@ -76,14 +76,14 @@ impl<T> PackedFreelist<T> {
     /// Constructs a new, empty `PackedFreelist<T>` with the specified capacity.
     ///
     /// The freelist will be able to hold exactly `capacity` elements without reallocating.
-    pub fn with_capacity(capacity: usize) -> PackedFreelist<T> {
+    pub fn with_capacity(capacity: usize) -> Self {
         assert!(capacity <= Self::MAX_SIZE, "PackedFreelist is too large. Max size is {}.", Self::MAX_SIZE);
 
-        let mut r = PackedFreelist {
+        let mut r = Self {
             objects: Vec::with_capacity(capacity),
             object_alloc_ids: vec![0; capacity],
             allocations: (0..capacity as u16).map(|i| Allocation {
-                allocation_id: i as AllocationID,
+                allocation_id: AllocationID::from(i),
                 object_index: TOMBSTONE,
                 next_allocation: i + 1
             }).collect(),
@@ -161,6 +161,10 @@ impl<T> PackedFreelist<T> {
 
     pub fn len(&self) -> usize {
         self.objects.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.objects.is_empty()
     }
 
     /// Get maximum number of elements
