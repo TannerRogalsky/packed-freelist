@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["AllocationError","Indicates an error when attempting to allocate an object"],["PackedFreelist","A data structure that provides constant time insertions and deletions and that elements are contiguous in memory."]],"type":[["AllocationID","Reference replacement to guarantee memory-stability"]]});
